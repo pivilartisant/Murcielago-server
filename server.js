@@ -17,14 +17,14 @@ app.use(cors());
 // Apply rate limiting middleware
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 25, // Max 100 requests per windowMs
+  max: 25, // Max 25 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
 });
 
-// Apply the limiter to all requests
 app.use(limiter);
 
-app.use((err, res) => {
+// Error handling middleware
+app.use((err, req, res, next) => {
   if (err instanceof rateLimit.RateLimitError) {
     res
       .status(429)
@@ -58,7 +58,7 @@ app.get("/api/videos/:videoId", (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
