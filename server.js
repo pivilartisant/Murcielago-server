@@ -1,7 +1,7 @@
 const express = require("express");
 const Vimeo = require("vimeo").Vimeo;
 const cors = require("cors"); // Import the cors package
-
+const rateLimit = require("express-rate-limit");
 const app = express();
 
 const access_token = "abf3c5748d3b73fa439d95f5d5f5cd84";
@@ -13,6 +13,27 @@ const vimeoClient = new Vimeo(client_id, client_secret, access_token);
 
 // Enable CORS for all routes
 app.use(cors());
+
+// Apply rate limiting middleware
+const limiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 25, // Max 100 requests per windowMs
+  message: "Too many requests from this IP, please try again later.",
+});
+
+// Apply the limiter to all requests
+app.use(limiter);
+
+app.use((err, res) => {
+  if (err instanceof rateLimit.RateLimitError) {
+    res
+      .status(429)
+      .json({ error: "Rate limit exceeded. Please try again later." });
+  } else {
+    // Handle other errors
+    res.status(500).json({ error: "Something went wrong." });
+  }
+});
 
 // API endpoint to fetch video details
 app.get("/api/videos/:videoId", (req, res) => {
