@@ -49,7 +49,7 @@ app.get("/api/videos/:videoId", (req, res) => {
     function (error, body) {
       if (error) {
         console.log(error);
-        res
+        return res
           .status(500)
           .json({ error: "An error occurred while fetching video details." });
       }
