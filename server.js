@@ -48,7 +48,7 @@ app.get("/api/videos/:videoId", (req, res) => {
   const videoId = req.params.videoId;
   const videoInfoCache = cache.get(videoId);
   if (!videoId){
-    res.status(404)
+    res.status(401)
       .json({error : "Video ID not found"})
   }
   if (videoInfoCache) {
