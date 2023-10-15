@@ -69,6 +69,35 @@ app.get("/api/videos/:videoId", (req, res) => {
   );
 });
 
+//Requests to vimeo API 
+app.get("/api/pictures/:videoId", (req, res) => {
+  const videoId = req.params.videoId;
+
+  vimeoClient.request(
+    {
+      method: "GET",
+      path: `/videos/${videoId}`,
+    },
+    function (error, body) {
+      if (error) {
+        console.log(error);
+        return res
+          .status(500)
+          .json({ error: "An error occurred while fetching video details." });
+      }
+
+      // Check if the 'pictures' property exists in the response body
+      if (body && body.pictures) {
+        // Return the 'pictures' object in the response
+        return res.json(body.pictures);
+      } else {
+        // If 'pictures' property is not found, return an appropriate response
+        return res.status(404).json({ error: "Pictures not found for this video." });
+      }
+    }
+  );
+});
+
 // Start the server
 const PORT = process.env.PORT || 8081;
 app.listen(PORT, () => {
