@@ -22,7 +22,7 @@ app.use(cors());
 // Apply rate limiting middleware
 const limiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 	250, // Max 125 requests per windowMs
+  max: 	250, // Max 250 requests per windowMs
   message: "Too many requests from this IP, please try again later.",
 });
 
@@ -30,7 +30,7 @@ app.set("trust proxy", 1);
 
 app.use(limiter);
 
-const cache = {};
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -44,17 +44,10 @@ app.use((err, req, res, next) => {
   }
 });
 
-const cacheMiddleware = (req, res, next) => {
-  const videoId = req.params.videoId;
-  if (cache[videoId]) {
-    res.json(cache[videoId]);
-  } else {
-    next();
-  }
-};
+
 
 //Requests to vimeo API 
-app.get("/api/videos/:videoId", cacheMiddleware, (req, res) => {
+app.get("/api/videos/:videoId", (req, res) => {
   const videoId = req.params.videoId;
 
   vimeoClient.request(
@@ -70,7 +63,6 @@ app.get("/api/videos/:videoId", cacheMiddleware, (req, res) => {
           .json({ error: "An error occurred while fetching video details." });
       }
 
-      cache[videoId] = body;
 
       res.json(body);
     }
