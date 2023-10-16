@@ -31,6 +31,7 @@ app.use(limiter);
 
 
 
+
 // Error handling middleware
 app.use((err, req, res, next) => {
   if (err instanceof rateLimit.RateLimitError) {
@@ -46,14 +47,35 @@ app.use((err, req, res, next) => {
 //Requests to vimeo API 
 app.get("/api/videos/:videoId", (req, res) => {
   const videoId = req.params.videoId;
+
+  
+
+  // Add possibility to return only pictures
+  // /api/videos/12345?includePictures=true
+  const includePictures = req.query.includePictures === 'true';
+
   const videoInfoCache = cache.get(videoId);
+
+  //If videoId is not provided
   if (!videoId){
     res.status(401)
-      .json({error : "Video ID not found"})
+      .json({message : "Video ID not proved", code:"401"})
   }
+  //if videoId is provided
+  // check if video info is in cache
   if (videoInfoCache) {
-    res.status(200)
-       .json({ data: videoInfoCache });
+    // if includePictures is true, return only pictures info
+    if (includePictures){
+      const { pictures } = videoInfoCache;
+      res.status(200)
+       .json({ pictures });
+       // else return cached video info
+    } else {
+      const { name:videoName, description, link, player_embed_url, embed } = videoInfoCache;
+        res.status(200)
+            .json({name:videoName, description, link, player_embed_url, embed });
+    }
+    // if no cached info is found, make a request to vimeo API
   } else {
     vimeoClient.request(
     {
@@ -61,19 +83,37 @@ app.get("/api/videos/:videoId", (req, res) => {
       path: `/videos/${videoId}`,
     },
     function (error, body) {
+      // hanlde errors if any
       if (error) { 
         console.log(error);
         if (res.statusCode === 500 ){
             return res.status(500)
-                    .json({ error: "Request error" });
+                    .json({ error: "Request error", 
+                  code: "500"
+                  });
         } else {
           return res.status(501)
-                    .json({ error: "Unknown error "});
-        }}
+                    .json({ error: "Unknown error ",
+                  code: "501"
+                  });
+        }
+      }
+      // if response is not empty
       if(body){
-        cache.set(videoId, body);
-         return res.status(200)
-                   .json(body);
+        // if includePictures is true, return only pictures info
+        if (includePictures){
+          const { pictures } = body    
+          cache.set(videoId, body);
+          return res.status(200)
+                    .json({ pictures});
+        // else return video info
+        } else {
+          const { name:videoName, description, link, player_embed_url, embed } = body;
+          // save video info in cache
+          cache.set(videoId, body);
+          return res.status(200)
+                    .json({ name:videoName, description, link, player_embed_url, embed});
+        }
       } else {
         return res.status(404)
                     .json({ error: "Content video information not found" });
